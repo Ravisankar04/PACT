@@ -2,5 +2,5 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "cd ../.. && pnpm --filter @pact/web build"
+  "buildCommand": "cd ../.. && pnpm --filter @pact/shared build && pnpm --filter @pact/web build"
 }
