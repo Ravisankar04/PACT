@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-geist-sans: "IBM Plex Sans", sans-serif;
+  --font-geist-mono: "IBM Plex Mono", monospace;
+  --font-display: "Syne", sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: #07090c;
+  color: #e8eef7;
+  min-height: 100%;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(61, 156, 240, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 90% 0%, rgba(61, 214, 140, 0.06), transparent 50%),
+    linear-gradient(#07090c, #07090c);
+}
+
+@layer utilities {
+  .panel {
+    @apply border border-pact-border bg-pact-panel/80 backdrop-blur;
+  }
+  .mono {
+    @apply font-mono text-[13px] tracking-tight;
+  }
+}

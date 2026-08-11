@@ -1,0 +1,32 @@
+{
+  "name": "pact",
+  "version": "0.1.0",
+  "private": true,
+  "description": "PACT — Autonomous Agent Accountability Protocol",
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:web": "pnpm --filter @pact/web dev",
+    "dev:api": "pnpm --filter @pact/api dev",
+    "dev:worker": "pnpm --filter @pact/worker dev",
+    "test": "pnpm -r run test",
+    "test:contracts": "cd contracts && forge test -vvv",
+    "lint": "pnpm -r run lint",
+    "db:generate": "pnpm --filter @pact/database generate",
+    "db:migrate": "pnpm --filter @pact/database migrate",
+    "db:push": "pnpm --filter @pact/database push",
+    "contracts:build": "cd contracts && forge build",
+    "contracts:deploy:local": "cd contracts && forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast",
+    "anvil": "anvil --chain-id 31337",
+    "demo": "pnpm --filter @pact/api demo",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "pnpm": "9.15.0"
+  }
+}

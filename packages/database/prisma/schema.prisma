@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  address   String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  agents    Agent[]
+  apiKeys   ApiKey[]
+  webhooks  Webhook[]
+  auditLogs AuditLog[]
+}
+
+model Agent {
+  id            String   @id @default(cuid())
+  onChainId     BigInt   @unique
+  ownerAddress  String
+  agentAddress  String
+  name          String
+  description   String   @default("")
+  metadataURI   String   @default("")
+  category      String   @default("general")
+  priceUsdc     BigInt   @default(0)
+  listed        Boolean  @default(false)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  policies      Policy[]
+  actions       AgentAction[]
+  escrowsPayer  Escrow[] @relation("PayerAgent")
+  escrowsPayee  Escrow[] @relation("PayeeAgent")
+  reputation    ReputationScore?
+
+  @@index([ownerAddress])
+  @@index([listed, category])
+}
+
+model Policy {
+  id               String   @id @default(cuid())
+  onChainId        BigInt   @unique
+  agentId          String
+  agent            Agent    @relation(fields: [agentId], references: [id])
+  ownerAddress     String
+  maxTransaction   BigInt
+  dailyLimit       BigInt
+  lifetimeLimit    BigInt
+  expiration       DateTime?
+  allowedTargets   String[]
+  allowedFunctions String[]
+  allowedTokens    String[]
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  actions          AgentAction[]
+
+  @@index([agentId])
+}
+
+model AgentAction {
+  id              String   @id @default(cuid())
+  agentId         String
+  agent           Agent    @relation(fields: [agentId], references: [id])
+  policyId        String?
+  policy          Policy?  @relation(fields: [policyId], references: [id])
+  target          String
+  token           String
+  amount          BigInt
+  nonce           BigInt
+  deadline        DateTime
+  dataHash        String
+  status          String
+  reason          String?
+  receiptId       String?
+  receiptHash     String?
+  transactionHash String?  @unique
+  blockNumber     BigInt?
+  createdAt       DateTime @default(now())
+  transaction     Transaction?
+
+  @@index([agentId, createdAt])
+  @@index([status])
+}
+
+model Transaction {
+  id              String      @id @default(cuid())
+  agentActionId   String?     @unique
+  agentAction     AgentAction? @relation(fields: [agentActionId], references: [id])
+  hash            String      @unique
+  blockNumber     BigInt
+  status          String
+  fromAddress     String
+  toAddress       String
+  rawInput        String?
+  decodedEvent    Json?
+  createdAt       DateTime    @default(now())
+
+  @@index([blockNumber])
+}
+
+model Escrow {
+  id              String   @id @default(cuid())
+  onChainId       BigInt   @unique
+  payerAgentId    String?
+  payeeAgentId    String?
+  payerAgent      Agent?   @relation("PayerAgent", fields: [payerAgentId], references: [id])
+  payeeAgent      Agent?   @relation("PayeeAgent", fields: [payeeAgentId], references: [id])
+  payerAddress    String
+  payeeAddress    String
+  amount          BigInt
+  status          String
+  termsHash       String
+  workHash        String?
+  disputeReason   String?
+  transactionHash String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  disputes        Dispute[]
+
+  @@index([status])
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  escrowId    String
+  escrow      Escrow   @relation(fields: [escrowId], references: [id])
+  reason      String
+  status      String   @default("OPEN")
+  resolution  String?
+  resolvedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReputationEvent {
+  id        String   @id @default(cuid())
+  agentOnChainId BigInt
+  type      String
+  payload   Json?
+  txHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([agentOnChainId, createdAt])
+}
+
+model ReputationScore {
+  id                String   @id @default(cuid())
+  agentId           String   @unique
+  agent             Agent    @relation(fields: [agentId], references: [id])
+  agentOnChainId    BigInt   @unique
+  score             Int      @default(0)
+  successfulTasks   Int      @default(0)
+  failedTasks       Int      @default(0)
+  disputes          Int      @default(0)
+  policyViolations  Int      @default(0)
+  completedEscrows  Int      @default(0)
+  updatedAt         DateTime @updatedAt
+}
+
+model BlockchainEvent {
+  id              String   @id @default(cuid())
+  chainId         Int
+  address         String
+  eventName       String
+  blockNumber     BigInt
+  transactionHash String
+  logIndex        Int
+  args            Json
+  createdAt       DateTime @default(now())
+
+  @@unique([transactionHash, logIndex])
+  @@index([eventName, blockNumber])
+  @@index([address, blockNumber])
+}
+
+model IndexerState {
+  id              String   @id @default("default")
+  lastBlock       BigInt   @default(0)
+  updatedAt       DateTime @updatedAt
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  url       String
+  secret    String
+  events    String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String   @id @default(cuid())
+  webhookId    String
+  webhook      Webhook  @relation(fields: [webhookId], references: [id])
+  event        String
+  payload      Json
+  status       String
+  responseCode Int?
+  attempts     Int      @default(0)
+  lastError    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([webhookId, createdAt])
+}
+
+model ApiKey {
+  id        String    @id @default(cuid())
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id])
+  name      String
+  keyHash   String    @unique
+  prefix    String
+  lastUsed  DateTime?
+  createdAt DateTime  @default(now())
+  revoked   Boolean   @default(false)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  resource  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model MarketplaceListing {
+  id          String   @id @default(cuid())
+  agentOnChainId BigInt @unique
+  name        String
+  service     String
+  category    String
+  priceUsdc   BigInt
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
